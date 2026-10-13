@@ -1,0 +1,38 @@
+services:
+  tgbot:
+    build: .
+    image: tgbot-voice
+    container_name: tgbot
+    restart: unless-stopped
+    environment:
+      - API_ID=${API_ID}
+      - API_HASH=${API_HASH}
+      - ONLINE_HOURS=${ONLINE_HOURS:-always}
+      - WEEKDAY_ONLINE_HOURS=${WEEKDAY_ONLINE_HOURS:-}
+      - SATURDAY_ONLINE_HOURS=${SATURDAY_ONLINE_HOURS:-}
+      - SUNDAY_ONLINE_HOURS=${SUNDAY_ONLINE_HOURS:-}
+      - TTS_URL=${TTS_URL:-http://host.docker.internal:8929/speak}
+      - DEVICE_MODEL=${DEVICE_MODEL:-Z880 MB}
+      - SYSTEM_VERSION=${SYSTEM_VERSION:-Windows 11}
+      - APP_VERSION=${APP_VERSION:-1.0}
+      - ONLINE_PING_SECONDS=${ONLINE_PING_SECONDS:-20}
+      - ONLINE_ACTIVITY_PING_SECONDS=${ONLINE_ACTIVITY_PING_SECONDS:-240}
+      - TZ=${TZ:-Asia/Shanghai}
+      # 要记录聊天内容的群名(私聊写对方的显示名),多个用英文逗号隔开;想停掉就在 .env 里写 CHATLOG_CHATS= 留空
+      - CHATLOG_CHATS=${CHATLOG_CHATS-进度,体验中心-数字交付工作,青云客-TY-CN}
+      - CHATLOG_BACKFILL=${CHATLOG_BACKFILL:-300}
+      - AUTO_CHECKIN_ENABLED=${AUTO_CHECKIN_ENABLED:-false}
+      - CHECKIN_BOT_USERNAME=${CHECKIN_BOT_USERNAME:-}
+      - CHECKIN_ALLOW_USER_TEST=${CHECKIN_ALLOW_USER_TEST:-false}
+    volumes:
+      # 命名卷保存登录 session(比 Windows 目录挂载更可靠,SQLite 不会锁坏)
+      - tgdata:/data
+      # 群聊记录写到本目录的 chatlog/ 下(纯文本 + 图片),宿主机上直接看
+      - ./chatlog:/chatlog
+    # 注意:如果部署在 Linux 主机(如 NAS),需要在这里加:
+    #   extra_hosts:
+    #     - "host.docker.internal:host-gateway"
+    # Docker Desktop(Windows/Mac)自带该域名,不要加,加了会注入不可达的 IPv6 地址
+
+volumes:
+  tgdata:
