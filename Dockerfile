@@ -13,6 +13,6 @@ RUN mkdir -p /data
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY main.py auto_checkin.py qr_login.py .
+COPY main.py auto_checkin.py .
 
 CMD ["python", "main.py"]

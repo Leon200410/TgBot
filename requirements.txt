@@ -1,2 +1,1 @@
 telethon>=1.44
-qrcode[pil]>=8.2,<9

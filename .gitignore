@@ -2,7 +2,7 @@
 .env.*
 !.env.example
 
-# 扫码登录凭证、临时二维码及本地聊天记录
+# 本地登录凭证、运行数据和聊天记录
 data/
 *.session*
 chatlog/

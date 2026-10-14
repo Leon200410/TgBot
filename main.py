@@ -9,7 +9,7 @@ Telegram 消息语音播报 + 保持在线(在 Docker 容器内运行)
 - AUTO_CHECKIN_ENABLED 开启后,只向指定查岗机器人的新私聊提醒回复关键词
 
 配置全部来自环境变量(见 docker-compose.yml 和 .env):
-  API_ID / API_HASH   在 https://my.telegram.org 申请
+  API_ID / API_HASH   示例预填公开备用应用参数,也可替换为自己申请的参数
   ONLINE_HOURS        always=全天在线;9:00-23:00=指定时段;留空=不保持在线
   TTS_URL             宿主机语音服务地址
   CHATLOG_CHATS       要记录的群名(私聊写对方的显示名),多个用英文逗号隔开;留空=不记录
@@ -413,7 +413,7 @@ async def start_auto_checkin(client, account_id: int):
 async def amain():
     if not API_ID.isdigit() or not API_HASH:
         print("缺少 API_ID / API_HASH 环境变量。")
-        print("请把 .env.example 复制为 .env,填入 https://my.telegram.org 申请的值。")
+        print("请把 .env.example 复制为 .env(示例已包含公开备用应用参数),再按提示登录个人账号。")
         sys.exit(1)
     online_schedule = parse_online_schedule()
     threading.Thread(target=_tts_worker, daemon=True).start()

@@ -20,11 +20,17 @@ Docker 容器(Linux)发不出声音,所以分成两部分:
 
 ## 一、准备(只需一次)
 
-1. 浏览器打开 <https://my.telegram.org>,用 Telegram 手机号登录
-   → 点 **API development tools** → 应用名随便填,创建
-   → 记下 **App api_id** 和 **App api_hash**
-2. 把 `.env.example` 复制一份改名为 `.env`,填入 `API_ID` 和 `API_HASH`
-   (`ONLINE_HOURS`、`TZ`、设备显示名按需改,见下文)
+1. 启动 Docker Desktop，把 `.env.example` 复制一份改名为 `.env`。
+   示例已预填公开备用应用参数 `API_ID=2040` 及其配对 `API_HASH`，可直接进入下文首次登录，
+   无需先在官网创建应用。`ONLINE_HOURS`、`TZ`、设备显示名按需调整，见下文。
+2. 这些是客户端的**应用参数**，不是你的账号登录会话；个人账号仍需通过手机号、验证码，
+   以及启用时的两步验证密码授权。
+3. 能在 <https://my.telegram.org> 的 **API development tools** 创建自己的应用后，
+   可将 `.env` 中的 `API_ID/API_HASH` 成对替换为自己的值。
+
+备用参数的公开收录出处是 [opentele 的 `TelegramDesktop` 定义](https://github.com/thedemons/opentele/blob/main/src/api.py)。
+[Telegram API 条款](https://core.telegram.org/api/terms)要求应用申请自己的 `api_id`；
+公开收录不代表 Telegram 许可将这对参数用于发布自己的应用。
 
 ## 二、首次登录(只需一次)
 
@@ -41,60 +47,6 @@ docker compose run --rm tgbot
 ```powershell
 docker compose up -d
 ```
-
-### 手机扫码登录（独立凭证）
-
-`qr_login.py` 的流程是：生成二维码 → 手机扫码确认 → 保存可复用的 `.session` 登录凭证。
-它生成独立的候选会话，与现有服务使用的 `/data/tg_session.session` 分开保存；
-不会停止当前服务，也不会自动安装这份凭证或切换服务账号。
-
-运行前，启动 Docker Desktop，在项目 `.env` 中填写 Telegram 应用的 `API_ID` 和 `API_HASH`，
-并确保手机 Telegram 已登录要授权的账号。扫码用于授权账号，不能替代应用凭证。
-
-1. 双击 `qr_login.bat`。启动器会构建镜像，并显示终端二维码。
-2. 用手机 Telegram 的“设置 → 设备 → 扫描二维码”扫码，再在手机上确认登录。
-   也可打开本项目的 `data/qr-login/telegram_login.png` 扫描。
-3. 二维码到期后，终端和 PNG 会更新；看图片扫码时需重新打开最新版本。
-   默认扫码阶段最多等待 5 分钟，包含该阶段的网络请求时间。
-4. 账号开启两步验证时，扫码后还需在交互终端输入密码，输入不会回显。
-   人工输入密码的用时不计入上述 5 分钟；密码最多尝试 3 次，每次登录请求最多等待 30 秒。
-5. 成功时终端显示“已登录”和“登录凭证已保存”，凭证位于
-   `data/qr-login/tg_session.session`；本次生成的 PNG 会自动清理。
-
-已有候选会话仍有效时，脚本直接保留并复用它，显示已登录账号和保存位置，不再生成二维码。
-超时、取消或错误时会提示登录未完成，关闭连接并尝试清理本次生成的二维码，保留已有会话文件。
-图片无法删除时会提示手动清理。扫码输出目录、会话文件和 Python 缓存已列入 `.gitignore`。
-`qr_login.py` 的退出码为：`0` 成功、`1` 未完成、`130` 用户按 `Ctrl+C` 取消。
-终端不会输出登录 URL、token、密码或 session 内容的明文。
-
-也可在项目目录的 PowerShell 中手动执行：
-
-```powershell
-docker compose build tgbot
-docker compose run --rm --no-deps -v "${PWD}/data/qr-login:/login" tgbot python qr_login.py --session /login/tg_session.session --qr-file /login/telegram_login.png
-```
-
-这条命令把容器 `/login` 映射到本地 `data/qr-login/`，保存位置与启动器相同。
-如需不用 Docker，可先安装 `requirements.txt`，再运行 `python qr_login.py`；
-Windows 本地运行的默认保存位置同样是项目 `data/qr-login/`。
-
-可用参数（`python qr_login.py --help` 查看帮助）：
-
-| 参数 | 用途与默认值 |
-|---|---|
-| `--session` | 独立会话文件路径；缺少 `.session` 后缀时自动补齐。本地默认 `data/qr-login/tg_session.session`；容器中不传此参数时默认 `/data/qr_login/tg_session.session`，保存在 `tgdata` 卷。 |
-| `--qr-file` | 二维码图片路径，必须以 `.png` 结尾；默认在会话文件同目录生成 `telegram_login.png`。 |
-| `--timeout` | 扫码阶段等待上限，单位秒，默认 `300`；必须为有限正数，不包含人工输入两步验证密码的时间。 |
-| `--env-file` | 应用配置文件路径，默认脚本所在目录的 `.env`；已有环境变量优先。Docker 启动器通过 Compose 传入项目 `.env` 中的应用配置。 |
-
-离线验证（本地先安装 `requirements.txt`）：
-
-```powershell
-python -m unittest discover -s tests -v
-```
-
-本次验证为 **58 项离线测试通过**，覆盖查岗回复以及扫码等待、二维码刷新、两步验证、取消清理和候选会话保护。
-测试使用模拟客户端，不连接 Telegram、不生成真实授权 token。**真实手机扫码及真实会话凭证保存尚未验证。**
 
 ## 三、启动语音服务(Windows 本机)
 
@@ -243,11 +195,10 @@ CHECKIN_ALLOW_USER_TEST=true
 
 ## 常见问题
 
-- **my.telegram.org 创建应用一直报 ERROR**:官方页面的老毛病,多半是 IP 风控或临时限制,
-  换网络、换浏览器、隔天再试。急用可临时改用 Telegram Desktop 开源客户端公开的凭证:
-  `API_ID=2040`、`API_HASH=b18441a1ff607e10a989891a5462e627`。
-  个人自用一般没问题,但风控概率比自己的凭证略高;之后申请到自己的建议换回
-  (改 `.env` → `docker compose down -v` → 重新走一遍首次登录)
+- **my.telegram.org 创建应用一直报 ERROR**：这是官网创建应用的步骤失败，仅凭 `ERROR` 无法确认原因。
+  `.env.example` 已包含公开备用应用参数，复制为 `.env` 后可按上文手机号、验证码流程进行账号登录。
+  创建应用与授权账号登录是两个步骤；示例不会替你注册或生成新的 Telegram 应用。
+  能申请自己的应用时，再将 `API_ID/API_HASH` 成对替换。
 - **容器日志提示"无法连接宿主机语音服务"**:先确认 `tts_server.bat` 在运行;
   仍不行多半是防火墙拦了,用管理员 PowerShell 放行一次:
   ```powershell
@@ -265,8 +216,8 @@ CHECKIN_ALLOW_USER_TEST=true
 
 ## 安全提示
 
-- `.env` 和 Docker 卷 `tgdata` 里的 session 等同于你的账号凭证,不要泄露;
-  分享代码时不要带 `.env`
+- Docker 卷 `tgdata` 里的 session 是你的个人账号登录凭证，不要泄露；
+  分享代码时不要附带实际 `.env` 或登录数据。
 - `chatlog/` 里是群聊原文和图片,分享代码时同样不要带
 - 语音服务监听 0.0.0.0:8929,局域网内其他设备也能让这台电脑"说话",
   介意的话在防火墙规则里只放行 Docker 网段

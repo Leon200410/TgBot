@@ -3,6 +3,5 @@
 data/
 tts_server.py
 tts_server.bat
-qr_login.bat
 README.md
 chatlog/
